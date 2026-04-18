@@ -74,6 +74,11 @@
                     return;
                 }
 
+                if(textOnImage.length > 50) {
+                    alert('Text is too long. Please enter a text with less than 50 characters');
+                    return;
+                }
+
                 const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
@@ -86,12 +91,12 @@
                             canvas.height = img.height;
                             ctx.drawImage(img, 0, 0);
                             const charLength = textOnImage.length;
-                            const textHeight = Math.round(2 * img.height / charLength) + 20; // Add some padding
-                            ctx.font = `${textHeight}px Arial`;
+                            const textFont = Math.round((img.width) / charLength + 4.5); // Add some padding
+                            ctx.font = `${textFont}px Arial`;
                             ctx.fillStyle = 'red';
 
                             // Fİll the background with white color to make the text visible if the image has a dark background
-                            const rectangleHeight = textHeight + 20; // Add some padding
+                            const rectangleHeight = img.height / 8; // Add some padding
                             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // Semi-transparent white
                             ctx.fillRect(0, img.height - rectangleHeight, img.width, rectangleHeight);
 
