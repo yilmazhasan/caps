@@ -1,136 +1,643 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Generate a caps</title>
 
     <style>
-        .vstack {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            row-gap: 30px;
-            margin: 5% 15%;
-            padding: 20px;
+        :root {
+            box-sizing: border-box;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: inherit;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
+            margin: 0;
+            padding: 16px;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f2f2f5;
+            color: #222;
         }
 
-        canvas {
+        .app {
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: clamp(20px, 5vw, 28px);
+            text-align: center;
+            margin: 8px 0;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            font-size: 16px;
+            padding: 10px;
             border: 1px solid #ccc;
-            margin-top: 20px;
+            border-radius: 8px;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 14px;
         }
 
         button {
-            margin-top: 20px;
-            padding: 10px 20px;
             font-size: 16px;
-            color: tomato;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            min-height: 44px;
+            touch-action: manipulation;
+            color: #fff;
         }
 
-        label {
-            font-size: 18px;
-            color: cadetblue;
-            align-self: flex-start;
+        .btn-primary {
+            background: tomato;
         }
 
-        .file-input {
-            padding: 10px;
-            font-size: 20px;
-            color: cadetblue;
+        .btn-secondary {
+            background: cadetblue;
         }
 
-        .text-input {
-            padding: 10px;
-            font-size: 20px;
-            color: cadetblue;
-            width: 400px;
+        .btn-danger {
+            background: #d9534f;
+            width: 100%;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .static-hint {
+            text-align: center;
+            color: #555;
+            font-size: 14px;
+            margin: 0 0 12px;
+        }
+
+        .stage-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+
+        .stage {
+            position: relative;
+            width: 100%;
+            line-height: 0;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .stage img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .textbox {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px dashed transparent;
+            border-radius: 4px;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .textbox.selected {
+            border-color: #3b82f6;
+        }
+
+        .textbox .content {
+            width: 100%;
+            padding: 2px 6px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .resize-handle {
+            display: none;
+            position: absolute;
+            right: -8px;
+            bottom: -8px;
+            width: 22px;
+            height: 22px;
+            background: #3b82f6;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: se-resize;
+            touch-action: none;
+        }
+
+        .textbox.selected .resize-handle {
+            display: block;
+        }
+
+        .delete-btn {
+            display: none;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #d9534f;
+            color: #fff;
+            font-size: 14px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .textbox.selected .delete-btn {
+            display: block;
+        }
+
+        .layer-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        .panel-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .panel-row-inline {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .panel-row-inline label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        input[type="color"] {
+            width: 48px;
+            height: 36px;
+            padding: 0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            flex: 1;
+        }
+
+        #hint {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 16px;
         }
     </style>
-
-    <script>
-        // Download modified image
-        function downloadImage() {
-            const canvas = document.getElementById('canvas');
-            const link = document.createElement('a');
-            link.download = 'modified_image.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        }
-        window.onload = function () {
-
-            document.getElementById('imageInput').addEventListener('change', function (event) {
-
-                const textOnImage = document.getElementById('textInput').value || '';
-
-                if (textOnImage == '') {
-                    alert('No text entered. Please first add a text');
-                    return;
-                }
-
-                if(textOnImage.length > 50) {
-                    alert('Text is too long. Please enter a text with less than 50 characters');
-                    return;
-                }
-
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        const img = new Image();
-                        img.onload = function () {
-                            const canvas = document.getElementById('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            ctx.drawImage(img, 0, 0);
-                            const charLength = textOnImage.length;
-                            const textFont = Math.round((img.width) / charLength + 4.5); // Add some padding
-                            ctx.font = `${textFont}px Arial`;
-                            ctx.fillStyle = 'red';
-
-                            // Fİll the background with white color to make the text visible if the image has a dark background
-                            const rectangleHeight = img.height / 8; // Add some padding
-                            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // Semi-transparent white
-                            ctx.fillRect(0, img.height - rectangleHeight, img.width, rectangleHeight);
-
-                            // Fill the text in the middle of rectangle
-                            ctx.fillStyle = 'red';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(textOnImage, img.width / 2, img.height - rectangleHeight / 2);
-                        }
-                        img.src = e.target.result;
-                    }
-                    reader.readAsDataURL(file);
-                }
-            });
-        }
-
-    </script>
 </head>
 
 <body>
-    <h1> Text on an image to generate a <i>caps</i></h1>
-    <div class="vstack">
-        <label for="textInput"> 1. ↓ Enter a text to add on the image</label>
-        <input type="text" id="textInput" placeholder="Enter text to add on image" class="text-input"
-            title="Enter the text you want to add on the image">
+    <div class="app">
+        <h1>Text on an image to generate a <i>caps</i></h1>
 
-        <label for="imageInput"> 2. ↓ Choose an image to upload and add text on it</label>
-        <input type="file" id="imageInput" accept="image/*" class="file-input" placeholder="Choose an image"
-            title="Choose an image to upload and add text on it">
+        <div class="card">
+            <div class="field">
+                <label for="imageInput">1. Choose an image to upload</label>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+            <div class="btn-row">
+                <button id="addTextBtn" class="btn-secondary" disabled>+ Add Text</button>
+                <button id="downloadBtn" class="btn-primary" disabled>Download Image</button>
+            </div>
+        </div>
 
-        <label for="downloadImage"> 3. ↓ Download the image after rendering</label>
-        <button id="downloadImage" onclick="downloadImage()">Download Image</button>
+        <div class="card" id="stageCard" hidden>
+            <p class="static-hint">2. Tap "+ Add Text" for another caption. Tap a caption to edit it below, drag it to
+                move, drag the blue dot to resize.</p>
 
-        <canvas id="canvas"></canvas>
+            <div class="stage-wrapper">
+                <div class="stage" id="stage">
+                    <img id="stageImg" alt="Uploaded image">
+                </div>
+            </div>
+
+            <div class="layer-panel" id="layerPanel" hidden>
+                <div class="panel-row">
+                    <label for="layerText">Caption text</label>
+                    <textarea id="layerText" rows="2" maxlength="120"></textarea>
+                </div>
+                <div class="panel-row panel-row-inline">
+                    <label for="layerTextColor">Text color</label>
+                    <input type="color" id="layerTextColor">
+                </div>
+                <div class="panel-row panel-row-inline">
+                    <label for="layerBgColor">Background color</label>
+                    <input type="color" id="layerBgColor">
+                </div>
+                <div class="panel-row panel-row-inline">
+                    <label for="layerOpacity">Background opacity</label>
+                    <input type="range" id="layerOpacity" min="0" max="100">
+                </div>
+                <button id="deleteLayerBtn" class="btn-danger">Delete this caption</button>
+            </div>
+            <p id="hint">Tap a caption on the image to edit it.</p>
+        </div>
     </div>
+
+    <script>
+        (function () {
+            const imageInput = document.getElementById('imageInput');
+            const addTextBtn = document.getElementById('addTextBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const stageCard = document.getElementById('stageCard');
+            const stage = document.getElementById('stage');
+            const stageImg = document.getElementById('stageImg');
+            const layerPanel = document.getElementById('layerPanel');
+            const hint = document.getElementById('hint');
+            const layerTextInput = document.getElementById('layerText');
+            const layerTextColorInput = document.getElementById('layerTextColor');
+            const layerBgColorInput = document.getElementById('layerBgColor');
+            const layerOpacityInput = document.getElementById('layerOpacity');
+            const deleteLayerBtn = document.getElementById('deleteLayerBtn');
+
+            const MIN_W = 10;
+            const MIN_H = 6;
+
+            let hasImage = false;
+            let layers = [];
+            let layerIdCounter = 0;
+            let selectedLayerId = null;
+
+            // Reused off-screen canvas for both live-preview and export font measurement,
+            // so the on-screen preview matches the exported image.
+            const measureCanvas = document.createElement('canvas');
+            const measureCtx = measureCanvas.getContext('2d');
+
+            function clamp(value, min, max) {
+                return Math.min(Math.max(value, min), max);
+            }
+
+            function hexToRgba(hex, alpha) {
+                const bigint = parseInt(hex.slice(1), 16);
+                const r = (bigint >> 16) & 255;
+                const g = (bigint >> 8) & 255;
+                const b = bigint & 255;
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            function fitFontSize(ctx, lines, maxWidth, maxHeight) {
+                maxWidth = Math.max(maxWidth, 1);
+                maxHeight = Math.max(maxHeight, 1);
+                let fontSize = Math.max(Math.floor(maxHeight / (lines.length * 1.2)), 6);
+                while (fontSize > 6) {
+                    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                    const widest = lines.reduce((m, l) => Math.max(m, ctx.measureText(l).width), 0);
+                    if (widest <= maxWidth) break;
+                    fontSize -= 1;
+                }
+                return fontSize;
+            }
+
+            function getSelectedLayer() {
+                return layers.find(l => l.id === selectedLayerId) || null;
+            }
+
+            function applyLayerPosition(layer) {
+                layer.el.style.left = layer.x + '%';
+                layer.el.style.top = layer.y + '%';
+                layer.el.style.width = layer.w + '%';
+                layer.el.style.height = layer.h + '%';
+            }
+
+            function applyLayerStyle(layer) {
+                layer.el.style.background = hexToRgba(layer.bgColor, layer.opacity / 100);
+                layer.contentEl.style.color = layer.textColor;
+            }
+
+            function refitFont(layer) {
+                const lines = (layer.text || '').split('\n');
+                const w = layer.el.clientWidth * 0.9;
+                const h = layer.el.clientHeight * 0.85;
+                const fontSize = fitFontSize(measureCtx, lines.length ? lines : [''], w, h);
+                layer.contentEl.style.fontSize = fontSize + 'px';
+            }
+
+            function selectLayer(id) {
+                selectedLayerId = id;
+                layers.forEach(l => l.el.classList.toggle('selected', l.id === id));
+                const layer = getSelectedLayer();
+                if (!layer) {
+                    layerPanel.hidden = true;
+                    hint.hidden = false;
+                    return;
+                }
+                hint.hidden = true;
+                layerPanel.hidden = false;
+                layerTextInput.value = layer.text;
+                layerTextColorInput.value = layer.textColor;
+                layerBgColorInput.value = layer.bgColor;
+                layerOpacityInput.value = layer.opacity;
+            }
+
+            function removeLayer(id) {
+                const layer = layers.find(l => l.id === id);
+                if (!layer) return;
+                layer.el.remove();
+                layers = layers.filter(l => l.id !== id);
+                if (selectedLayerId === id) selectLayer(null);
+            }
+
+            function resetLayers() {
+                layers.forEach(l => l.el.remove());
+                layers = [];
+                selectLayer(null);
+            }
+
+            function startDrag(pointerEvent, layer) {
+                const stageRect = stage.getBoundingClientRect();
+                const startPointerX = pointerEvent.clientX;
+                const startPointerY = pointerEvent.clientY;
+                const startX = layer.x;
+                const startY = layer.y;
+                layer.el.setPointerCapture(pointerEvent.pointerId);
+
+                function onMove(ev) {
+                    const dxPct = (ev.clientX - startPointerX) / stageRect.width * 100;
+                    const dyPct = (ev.clientY - startPointerY) / stageRect.height * 100;
+                    layer.x = clamp(startX + dxPct, 0, 100 - layer.w);
+                    layer.y = clamp(startY + dyPct, 0, 100 - layer.h);
+                    applyLayerPosition(layer);
+                }
+
+                function onUp() {
+                    layer.el.removeEventListener('pointermove', onMove);
+                    layer.el.removeEventListener('pointerup', onUp);
+                    layer.el.removeEventListener('pointercancel', onUp);
+                }
+
+                layer.el.addEventListener('pointermove', onMove);
+                layer.el.addEventListener('pointerup', onUp);
+                layer.el.addEventListener('pointercancel', onUp);
+            }
+
+            function startResize(pointerEvent, layer, handleEl) {
+                const stageRect = stage.getBoundingClientRect();
+                const startPointerX = pointerEvent.clientX;
+                const startPointerY = pointerEvent.clientY;
+                const startW = layer.w;
+                const startH = layer.h;
+                handleEl.setPointerCapture(pointerEvent.pointerId);
+
+                function onMove(ev) {
+                    const dwPct = (ev.clientX - startPointerX) / stageRect.width * 100;
+                    const dhPct = (ev.clientY - startPointerY) / stageRect.height * 100;
+                    layer.w = clamp(startW + dwPct, MIN_W, 100 - layer.x);
+                    layer.h = clamp(startH + dhPct, MIN_H, 100 - layer.y);
+                    applyLayerPosition(layer);
+                    refitFont(layer);
+                }
+
+                function onUp() {
+                    handleEl.removeEventListener('pointermove', onMove);
+                    handleEl.removeEventListener('pointerup', onUp);
+                    handleEl.removeEventListener('pointercancel', onUp);
+                }
+
+                handleEl.addEventListener('pointermove', onMove);
+                handleEl.addEventListener('pointerup', onUp);
+                handleEl.addEventListener('pointercancel', onUp);
+            }
+
+            function addTextLayer() {
+                if (!hasImage) return;
+                layerIdCounter += 1;
+                const offset = (layers.length * 6) % 40;
+
+                const layer = {
+                    id: layerIdCounter,
+                    x: clamp(15 + offset, 0, 45),
+                    y: clamp(75 - offset, 0, 80),
+                    w: 55,
+                    h: 14,
+                    text: 'Your text here',
+                    textColor: '#ff0000',
+                    bgColor: '#ffffff',
+                    opacity: 40,
+                };
+
+                const el = document.createElement('div');
+                el.className = 'textbox';
+
+                const contentEl = document.createElement('div');
+                contentEl.className = 'content';
+                contentEl.textContent = layer.text;
+                el.appendChild(contentEl);
+
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                el.appendChild(resizeHandle);
+
+                const deleteBtn = document.createElement('div');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '×';
+                el.appendChild(deleteBtn);
+
+                layer.el = el;
+                layer.contentEl = contentEl;
+                layers.push(layer);
+                stage.appendChild(el);
+
+                applyLayerPosition(layer);
+                applyLayerStyle(layer);
+
+                el.addEventListener('pointerdown', (e) => {
+                    if (e.target === resizeHandle || e.target === deleteBtn) return;
+                    e.stopPropagation();
+                    selectLayer(layer.id);
+                    startDrag(e, layer);
+                });
+
+                resizeHandle.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    selectLayer(layer.id);
+                    startResize(e, layer, resizeHandle);
+                });
+
+                deleteBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeLayer(layer.id);
+                });
+
+                requestAnimationFrame(() => refitFont(layer));
+                selectLayer(layer.id);
+                return layer;
+            }
+
+            function downloadImage() {
+                if (!hasImage) return;
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = stageImg.naturalWidth;
+                exportCanvas.height = stageImg.naturalHeight;
+                const ctx = exportCanvas.getContext('2d');
+                ctx.drawImage(stageImg, 0, 0, exportCanvas.width, exportCanvas.height);
+
+                layers.forEach(layer => {
+                    const x = layer.x / 100 * exportCanvas.width;
+                    const y = layer.y / 100 * exportCanvas.height;
+                    const w = layer.w / 100 * exportCanvas.width;
+                    const h = layer.h / 100 * exportCanvas.height;
+
+                    ctx.fillStyle = hexToRgba(layer.bgColor, layer.opacity / 100);
+                    ctx.fillRect(x, y, w, h);
+
+                    const lines = (layer.text || '').split('\n');
+                    if (!lines.some(l => l.trim() !== '')) return;
+
+                    const fontSize = fitFontSize(ctx, lines, w * 0.9, h * 0.85);
+                    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                    ctx.fillStyle = layer.textColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const lineHeight = fontSize * 1.2;
+                    const totalHeight = lineHeight * lines.length;
+                    const firstBaseline = y + h / 2 - totalHeight / 2 + lineHeight / 2;
+                    lines.forEach((line, i) => {
+                        ctx.fillText(line, x + w / 2, firstBaseline + i * lineHeight);
+                    });
+                });
+
+                const link = document.createElement('a');
+                link.download = 'caps.png';
+                link.href = exportCanvas.toDataURL('image/png');
+                link.click();
+            }
+
+            stage.addEventListener('pointerdown', (e) => {
+                if (e.target === stage || e.target === stageImg) selectLayer(null);
+            });
+
+            imageInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    stageImg.onload = () => {
+                        hasImage = true;
+                        resetLayers();
+                        stageCard.hidden = false;
+                        addTextBtn.disabled = false;
+                        downloadBtn.disabled = false;
+                        addTextLayer();
+                    };
+                    stageImg.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            addTextBtn.addEventListener('click', addTextLayer);
+            downloadBtn.addEventListener('click', downloadImage);
+
+            layerTextInput.addEventListener('input', () => {
+                const layer = getSelectedLayer();
+                if (!layer) return;
+                layer.text = layerTextInput.value;
+                layer.contentEl.textContent = layer.text;
+                refitFont(layer);
+            });
+
+            layerTextColorInput.addEventListener('input', () => {
+                const layer = getSelectedLayer();
+                if (!layer) return;
+                layer.textColor = layerTextColorInput.value;
+                applyLayerStyle(layer);
+            });
+
+            layerBgColorInput.addEventListener('input', () => {
+                const layer = getSelectedLayer();
+                if (!layer) return;
+                layer.bgColor = layerBgColorInput.value;
+                applyLayerStyle(layer);
+            });
+
+            layerOpacityInput.addEventListener('input', () => {
+                const layer = getSelectedLayer();
+                if (!layer) return;
+                layer.opacity = Number(layerOpacityInput.value);
+                applyLayerStyle(layer);
+            });
+
+            deleteLayerBtn.addEventListener('click', () => {
+                if (selectedLayerId !== null) removeLayer(selectedLayerId);
+            });
+
+            let resizeTimer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => layers.forEach(refitFont), 100);
+            });
+        })();
+    </script>
+</body>
 
 </html>
