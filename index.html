@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generate a caps</title>
 
     <style>
@@ -127,7 +127,6 @@
             width: 100%;
             line-height: 0;
             user-select: none;
-            touch-action: none;
         }
 
         .stage img {
@@ -246,6 +245,13 @@
             flex: 1;
         }
 
+        .opacity-value {
+            min-width: 42px;
+            text-align: right;
+            font-size: 14px;
+            color: #444;
+        }
+
         #hint {
             text-align: center;
             color: #666;
@@ -296,6 +302,7 @@
                 <div class="panel-row panel-row-inline">
                     <label for="layerOpacity">Background opacity</label>
                     <input type="range" id="layerOpacity" min="0" max="100">
+                    <span id="layerOpacityValue" class="opacity-value">40%</span>
                 </div>
                 <button id="deleteLayerBtn" class="btn-danger">Delete this caption</button>
             </div>
@@ -317,6 +324,7 @@
             const layerTextColorInput = document.getElementById('layerTextColor');
             const layerBgColorInput = document.getElementById('layerBgColor');
             const layerOpacityInput = document.getElementById('layerOpacity');
+            const layerOpacityValue = document.getElementById('layerOpacityValue');
             const deleteLayerBtn = document.getElementById('deleteLayerBtn');
 
             const MIN_W = 10;
@@ -396,6 +404,7 @@
                 layerTextColorInput.value = layer.textColor;
                 layerBgColorInput.value = layer.bgColor;
                 layerOpacityInput.value = layer.opacity;
+                layerOpacityValue.textContent = layer.opacity + '%';
             }
 
             function removeLayer(id) {
@@ -528,6 +537,15 @@
                     removeLayer(layer.id);
                 });
 
+                el.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    layer.x = 0;
+                    layer.w = 100;
+                    applyLayerPosition(layer);
+                    refitFont(layer);
+                    selectLayer(layer.id);
+                });
+
                 requestAnimationFrame(() => refitFont(layer));
                 selectLayer(layer.id);
                 return layer;
@@ -624,6 +642,7 @@
                 const layer = getSelectedLayer();
                 if (!layer) return;
                 layer.opacity = Number(layerOpacityInput.value);
+                layerOpacityValue.textContent = layer.opacity + '%';
                 applyLayerStyle(layer);
             });
 
